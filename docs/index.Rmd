@@ -41,6 +41,7 @@ rabbits <- read.table("serolRabbitsLetrinas.txt", header = TRUE, sep = "\t", str
 rabbits <- rabbits %>%
     mutate(ratio = pos / (pos + neg))
 rabbits$ab.indexST<- as.numeric(scale(rabbits$ab.index))# this way the estimates of the model which include ab.index as covariate are meant for the average value of ab.index in the dataset
+rabbits
 ```
 
 ## Hypothesis 1: Is there a difference in Abundance Between GI.1 and GI.2 Outbreak Periods?
