@@ -1,0 +1,37 @@
+location	neg	pos	ab.index	period
+Almodovar del Campo	8	11	38	GI.1
+Almodovar del Campo	19	15	85	GI.2
+Castellsera	10	10	NA	GI.1
+Castellsera	12	6	NA	GI.2
+Castilblanco de los Arroyos	12	5	114	GI.1
+Castilblanco de los Arroyos	8	14	33	GI.2
+Jaraguas	9	12	NA	GI.1
+Jaraguas	14	5	NA	GI.2
+Llutxent	4	20	NA	GI.1
+Llutxent	12	10	NA	GI.2
+Los Corrales 	6	10	NA	GI.1
+Los Corrales 	3	16	NA	GI.2
+Lucena	23	7	41	GI.1
+Lucena	7	16	55	GI.2
+Mazarambroz	7	12	236	GI.1
+Mazarambroz	4	14	152	GI.2
+Montaverner	8	1	NA	GI.1
+Montaverner	12	7	NA	GI.2
+Munera	11	9	313	GI.1
+Munera	2	18	47	GI.2
+Ontinyent	9	13	NA	GI.1
+Ontinyent	3	7	NA	GI.2
+Pedroche	9	1	6	GI.1
+Pedroche	14	6	38	GI.2
+Quijorna	5	11	56	GI.1
+Quijorna	2	19	46	GI.2
+San Ignacio del Viar			286	GI.1
+San Ignacio del Viar	13	6	21	GI.2
+Tarazona de la Mancha	8	3	NA	GI.1
+Tarazona de la Mancha	4	14	19	GI.2
+Torrebeses	12	6	NA	GI.1
+Torrebeses	16	9	NA	GI.2
+Torrecampo	12	5	82	GI.1
+Torrecampo	9	13	108	GI.2
+Vejer de la Frontera	13	12	87	GI.1
+Vejer de la Frontera	8	14	141	GI.2

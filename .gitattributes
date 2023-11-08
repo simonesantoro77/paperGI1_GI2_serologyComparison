@@ -1,0 +1,9 @@
+.Rproj.user -crlf -diff
+.Rhistory -crlf -diff
+.RData -crlf -diff
+.Ruserdata -crlf -diff
+.Rproj -crlf -diff
+.html -crlf -diff
+otrosArchivos/ -crlf -diff
+*.R linguist-language=R
+*.Rmd linguist-language=RMarkdown

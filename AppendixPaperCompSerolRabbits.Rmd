@@ -1,0 +1,156 @@
+---
+title: Analyses of "Comparison of seroprevalence in locations monitored during the GI.1 and GI.2 periods"
+author: "Simone Santoro"
+date: "2023-09-28"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    collapsed: false
+    smooth_scroll: true
+    theme: journal
+    highlight: kate
+    df_print: paged
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+
+## Required libraries
+
+```{r warning=FALSE, message=FALSE}
+library(ggplot2)
+library(ggeffects)
+library(glmmTMB)
+library(DHARMa)
+library(dplyr)
+library(AICcmodavg)
+```
+
+## Loading the database
+The dataset comprises 36 observations that are distributed across 18 locations. These locations were monitored during two distinct periods: the GI.1 outbreak and the GI.2 outbreak. Except for one location (San Ignacio del Viar), data on the number of rabbits testing negative and positive for GI is available for all locations during both periods. Additionally, an abundance index (the count of latrines observed over linear transects that are four kilometers long) is available for 10 locations during GI.1 and 11 locations during GI.2. There are a total of 20 records that contain complete information on serological status and the abundance index, with 9 records from the GI.1 period and 11 records from the GI.2 period.
+```{r}
+rabbits <- read.table("serolRabbitsLetrinas.txt", header = TRUE, sep = "\t", stringsAsFactors = TRUE)
+rabbits <- rabbits %>%
+    mutate(ratio = pos / (pos + neg))
+rabbits$ab.indexST<- as.numeric(scale(rabbits$ab.index))# this way the estimates of the model which include ab.index as covariate are meant for the average value of ab.index in the dataset
+```
+
+## Hypothesis 1: Is there a difference in Abundance Between GI.1 and GI.2 Outbreak Periods?
+```{r}
+# Keeping only the rows where ab.index is a non-NA
+rabbitss<- rabbits[complete.cases(rabbits$ab.index),]
+glmm1<- glmmTMB(ab.index ~ period + (1|location), data=rabbits)
+simulateResiduals(glmm1,plot = T)
+glm1<- glmmTMB(ab.index ~ period, data=rabbits)
+simulateResiduals(glm1,plot = T)
+AICc(glmm1)
+AICc(glm1)
+dif.AICc1<- round(AICc(glmm1)-AICc(glm1),2)
+
+no.lat.GI.1<- round(as.numeric(fixef(glm1)[[1]][1]),2)
+dif.lat.GI.2<- round(as.numeric(fixef(glm1)[[1]][2]),2)
+glm1Null<- glmmTMB(ab.index ~ 1, data=rabbits)
+glm1LRT<- anova(glm1,glm1Null,test="LRT")
+glm1p<- ifelse(glm1LRT$`Pr(>Chisq)`[2]<0.01,"< 0.01",round(glm1LRT$`Pr(>Chisq)`[2],3))
+
+summary(glm1)
+```
+
+Using location as random intercept is not supported by AICc (AICc difference of `r dif.AICc1` units). Therefore, we used a GLM which indicates that the average number of latrines counted over 4-km long linear transects during the GI.1 period (approximately `r no.lat.GI.1`) was `r dif.lat.GI.2` higher than during the GI.2 period. However, this difference was statistically non-significant **(p = `r glm1p`)** according to a likelihood ratio test. 
+
+## Hypothesis 2: Is There a Difference in Seroprevalence Between the GI.1 and GI.2 Outbreak Periods?
+```{r}
+glmm2<- glmmTMB(cbind(pos,neg) ~ period + ab.indexST + (1|location), data=rabbits,binomial)
+simulateResiduals(glmm2,plot = T)
+glm2<- glmmTMB(cbind(pos,neg) ~ period + ab.indexST, data=rabbits,binomial)
+simulateResiduals(glm2,plot = T)
+AICc(glmm2)
+AICc(glm2)
+(dif.AICc2<- round(AICc(glmm2)-AICc(glm2),2))
+
+glmm2Null<- glmmTMB(cbind(pos,neg) ~ 1 + ab.indexST + (1|location), data=rabbits,binomial)
+glmm2LRT<- anova(glmm2,glmm2Null,test="LRT")
+glmm2p<- ifelse(glmm2LRT$`Pr(>Chisq)`[2]<0.01,"< 0.01",round(glmm2LRT$`Pr(>Chisq)`[2],3))
+
+summary(glmm2)
+```
+
+Using location as random intercept is substantially supported by AICc (AICc difference of `r abs(dif.AICc2)` units).
+
+```{r fig.cap="Figure 1. Study areas' seroprevalence during the GI.1 and GI.2 outbreaks"}
+# Calculate predicted probabilities and confidence intervals
+effects1 <- ggpredict(glmm2, terms = "period")
+newdata1 <- data.frame(
+  period = effects1$x,
+  predicted = effects1$predicted,
+  conf.low = effects1$conf.low,
+  conf.high = effects1$conf.high
+)
+
+# Create a ggplot figure
+ggplot(newdata1, aes(x = period, y = predicted)) +
+  geom_point(size = 4) +  # Adjust point size
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.1, linewidth = 1) +  # Adjust error bar width and size
+  labs(
+    x = "Period",
+    y = "Seroprevalence (%)"
+  ) +
+  theme_classic() +
+  theme(
+    axis.title = element_text(size = 14),  # Adjust axis label size
+    axis.text = element_text(size = 12),   # Adjust axis text size
+  )
+```
+
+Therefore, we used a GLMM which indicates that the seroprevalence during the GI.1 period was `r round(newdata1$predicted[1],2)` (95%CI: `r round(newdata1$conf.low[1],2)`-`r round(newdata1$conf.high[1],2)`) whereas it was **significantly higher (p = `r glmm2p`) during the GI.2 period** when it was (`r round(newdata1$predicted[2],2)`, 95%CI: `r round(newdata1$conf.low[2],2)`-`r round(newdata1$conf.high[2],2)`). 
+
+## Hypothesis 3: abundance affects seroprevalence during the GI.1 or GI.2 period
+
+```{r}
+glmm3GI1<- glm(cbind(pos,neg) ~ ab.index, data=rabbits[rabbits$period=="GI.1" & !is.na(rabbits$ab.index),],binomial)
+simulateResiduals(glmm3GI1,plot = T)
+
+glmm3GI1Null<- glm(cbind(pos,neg) ~ 1, data=rabbits[rabbits$period=="GI.1" & !is.na(rabbits$ab.index),],binomial)
+glmm3GI1LRT<- anova(glmm3GI1,glmm3GI1Null,test="LRT")
+glmm3GI1p<- ifelse(glmm3GI1LRT$`Pr(>Chi)`[2]<0.01,"< 0.01",round(glmm3GI1LRT$`Pr(>Chi)`[2],3))
+
+summary(glmm3GI1)
+```
+
+```{r}
+glmm3GI2<- glm(cbind(pos,neg) ~ ab.index, data=rabbits[rabbits$period=="GI.2" & !is.na(rabbits$ab.index),],binomial)
+simulateResiduals(glmm3GI2,plot = T)
+
+glmm3GI2Null<- glm(cbind(pos,neg) ~ 1, data=rabbits[rabbits$period=="GI.2" & !is.na(rabbits$ab.index),],binomial)
+glmm3GI2LRT<- anova(glmm3GI2,glmm3GI2Null,test="LRT")
+glmm3GI2p<- ifelse(glmm3GI2LRT$`Pr(>Chi)`[2]<0.01,"< 0.01",round(glmm3GI2LRT$`Pr(>Chi)`[2],3))
+
+summary(glmm3GI2)
+```
+
+Although the model's estimate suggest a positive relationship between abundance and seroprevalence, we found no support to this hypothesis neither during the GI.1 period **(p = `r glmm3GI1p`)** nor the GI.2 period **(p = `r glmm3GI2p`)** (Figure 3).
+
+```{r fig.cap="Figure 3. Study areas' relationship between abundance and seroprevalence during the GI.1 and GI.2 outbreak", warning=FALSE}
+
+ggplot(rabbits, aes(x = ab.index, y = pos / (pos + neg), color = period))+
+  geom_point(size = 3)+
+  geom_smooth(method = "lm", se = TRUE)+
+  labs(
+    x = "No. of latrines",
+    y = "Seroprevalence (%)"
+  )+
+  theme_classic()+
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  )
+```
+
